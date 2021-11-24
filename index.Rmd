@@ -342,13 +342,13 @@ provincias1 <-
   provincias %>%
   st_transform(crs = 5367)
   
+
 plot(
   provincias1$geometry,
   extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
   main = "Quebradas",
   axes = TRUE,
   graticule = TRUE)
-
 
 quebradas <-
   rios %>%
@@ -392,7 +392,24 @@ plot(
 
 plot (provincias1$geometry, add= TRUE)
 
+
 ```
+
+```{r warning=FALSE, message=FALSE}
+
+## Cantidad de denuncias ambientales al rededor de quebradas 
+
+denuncias_buffer_quebradas %>%
+  st_drop_geometry () %>%
+  filter(!is.na(TIPO) & TIPO != "") %>%
+  group_by(TIPO_inf) %>%
+  summarise (registros = n ()) %>%
+  arrange (desc(registros)) %>%
+  slice (1:10)
+
+```
+
+
 
 Row {data-width=300}
 -----------------------------------------------------------------------
@@ -426,16 +443,12 @@ plot (autopistas$geometry, col = "brown", add= TRUE)
 
 plot (denuncias_buffer_autopistas, pch =16, col = "red", add = TRUE)
 
-plot (provincias1, add= TRUE)
-
 ```
 
-Row {data-width=300}
------------------------------------------------------------------------
 
-### Cantidad y tipo de denuncias ambientales cerca de autopistas y quebradas
+```{r warning=FALSE, message=FALSE}
+## Cantidad de denuncias ambientales alrededor de autopistas
 
-```{r}
 denuncias_buffer_autopistas %>%
   st_drop_geometry () %>%
   filter(!is.na(categoria) & categoria != "") %>%
@@ -443,14 +456,20 @@ denuncias_buffer_autopistas %>%
   summarise (registros = n ()) %>%
   arrange (desc(registros)) %>%
   slice (1:10)
+```
 
-denuncias_buffer_quebradas %>%
-  st_drop_geometry () %>%
-  filter(!is.na(TIPO) & TIPO != "") %>%
-  group_by(TIPO_inf) %>%
-  summarise (registros = n ()) %>%
-  arrange (desc(registros)) %>%
-  slice (1:10)
+
+
+
+Row {data-width=300}
+-----------------------------------------------------------------------
+
+### Cantidad y tipo de denuncias ambientales cerca de autopistas y quebradas
+
+```{r}
+
+
+
 ```
 
 
