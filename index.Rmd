@@ -1,5 +1,5 @@
 ---
-title: "Denuncias Ambientales Costa Rica"
+title: "Denuncias Ambientales en Costa Rica"
 output: 
   flexdashboard::flex_dashboard:
   orientation: rows
@@ -25,6 +25,7 @@ library(shiny)
 library (ggplot2)
 library (plotly)
 ```
+
 
 ```{r datos, warning=FALSE, message=FALSE}
 
@@ -65,6 +66,38 @@ altitud <-
   )
 ```
 
+```{r}
+denuncias2021 <-
+read.csv (
+  file= "https://raw.githubusercontent.com/MaureenArg/datostarea/master/denunciasoct23.csv", 
+ sep = ";"
+    )
+```
+
+```{r}
+asp <-
+  st_read(
+    "https://raw.githubusercontent.com/tpb728O-programaciongeoespacialr/2021ii/main/datos/sinac/areas-silvestres-protegidas-simplificadas_100m.geojson",
+    quiet = TRUE
+  )
+```
+
+```{r}
+red_vial <-
+  st_read(
+    "https://raw.githubusercontent.com/tpb728O-programaciongeoespacialr/2021ii/main/datos/ign/infraestructura/redvial-simplificadas_500m.geojson",
+    quiet = TRUE
+  )
+```
+
+```{r}
+rios <-
+  st_read(
+    "https://raw.githubusercontent.com/MaureenArg/datostarea/master/rios.geojson",
+    quiet = TRUE
+  )
+```
+
 
 ```{r warning=FALSE, message=FALSE}
 # Lista ordenada de denuncias + "Todas"
@@ -78,12 +111,16 @@ lista_provincias <- sort(lista_provincias)
 lista_provincias <- c("Todas", lista_provincias)
 ```
 
-
+# Información general 
 
 Column {.sidebar}
 -----------------------------------------------------------------------
  
 ```{r filtros}
+
+h3 ("Filtros")
+
+
 selectInput(
   inputId = "denuncias",
   label = "Tipo denuncia",
@@ -127,7 +164,7 @@ filtrarRegistros <- reactive({
  
  
 
-Row {data-width=800}
+Row {data-width=600}
 -----------------------------------------------------------------------
   
 ### Mapa de distribución de denuncias ambientales en Costa Rica (2018-2019)
@@ -228,10 +265,10 @@ renderPlotly({
 
 ```
 
-Row {data-width=200}
+Row {data-width=400}
 -----------------------------------------------------------------------
   
-  ###  Registros de denuncias ambientales en Costa Rica (2018-2019)
+###  Registros de denuncias ambientales en Costa Rica (2018-2019)
   
   
 
@@ -241,13 +278,180 @@ renderDT({
   
   registros %>%
     st_drop_geometry() %>%
-    datatable(rownames= FALSE, filter= "top", class= "hover cell-border stripe", colnames = c( "Tipo de denuncia", "Detalle de la denuncia", "Año",  "Provincia"), options = list (language = list (url = "//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json"),pageLength = 2, dom = "Bfrtip"))
+    datatable(rownames= FALSE, filter= "top", class= "hover cell-border stripe", colnames = c( "Tipo de denuncia", "Detalle de la denuncia", "Año",  "Provincia"), options = list (language = list (url = "//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json"),pageLength = 15, dom = "Bfrtip"))
 })
 ```
 
+# Gráficos
+
+Row {data-width=300}
+-----------------------------------------------------------------------
+
+### Comparación del tipo de denuncias por año
+
+```{r}
+Tipos <- c ("Agua", "Aire", "Forestal", "Mineria", "Suelo", "Vida Silvestre" )
+año2018 <- c (48,4,25,49,89,41)
+año2019 <- c (37,20,47,30,88,56)
+data <- data.frame (Tipos, año2018, año2019)
+```
+
+```{r}
+plot_ly (data, x= ~Tipos, y= ~año2018, type = "bar", name = "2018")%>%
+add_trace(y= ~año2019, name= "2019")%>%
+layout (yaxis= list(title="Cantidad"), barmode="group")%>%
+layout (title= "Cantidad de denuncias ambientales por año", xaxis= list (title= "Tipo de denuncia"), yaxis= list (title= "Cantidad de denuncias"))
+```
+
+Row {data-width=300}
+-----------------------------------------------------------------------
+
+### Total de denuncias ambientales según tipo (2018-2019)
+
+```{r warning=FALSE, message=FALSE}
+denuncias_x_tipo <-
+  denuncias2021 %>%
+  select (afectado, denuncias) %>%
+  group_by (afectado) %>%
+  summarise (denuncias = sum (denuncias))
+```
+
+```{r warning=FALSE, message=FALSE}
+ggplot () + geom_col (
+  data = denuncias_x_tipo, 
+  aes (x = afectado, fill =  afectado, 
+      y = denuncias, fill = "denuncias"), width = 0.9) +
+  ggtitle ("Cantidad de denuncias según tipo 2018-2019") +
+  xlab ("Tipos de denuncias") +
+  ylab ("Cantidad de denuncias") +
+  scale_fill_manual (values = c ("#0000FF", "#CDC0B0", "#458B00","#EEAD0E" ,"#8B7355", "#BF3EFF")) +
+  theme (
+    legend.title = element_blank(), legend.position = "left", plot.title = element_text (size = 13))
+```
 
 
+# Estadísticas 
 
+Row {data-width=300}
+-----------------------------------------------------------------------
+
+### Denuncias registradas a una distancia de 1 km de quebradas
+
+```{r}
+provincias1 <-
+  provincias %>%
+  st_transform(crs = 5367)
+  
+plot(
+  provincias1$geometry,
+  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
+  main = "Quebradas",
+  axes = TRUE,
+  graticule = TRUE)
+
+
+quebradas <-
+  rios %>%
+  filter(TIPO == "QUEBRADA") %>%
+  st_transform(crs = 5367)
+
+plot(
+  quebradas$geometry,
+  add = TRUE,
+  col = "blue")
+
+buffer_quebradas <-
+  quebradas %>%
+  st_buffer (dist = 1000)
+
+denu_depu_crt <-
+  denu_depu %>%
+  st_transform(crs = 5367)
+
+
+denuncias_buffer_quebradas <-
+  st_join (denu_depu_crt, buffer_quebradas)
+
+plot (
+  st_union( buffer_quebradas),
+  main = "Denuncias ambientales alrededor de quebradas", 
+  axes = TRUE, 
+  graticule = TRUE
+)  
+
+plot(quebradas$geometry,
+     col = "blue",
+     add = TRUE)
+
+plot(
+  denuncias_buffer_quebradas,
+  pch = 16,
+  col = "red",
+  add = TRUE
+)
+
+plot (provincias1$geometry, add= TRUE)
+
+```
+
+Row {data-width=300}
+-----------------------------------------------------------------------
+
+### Denuncias ambientales registradas a una distancia de 5 km de autopistas principales
+
+
+```{r}
+autopistas <-
+  red_vial %>%
+  filter(categoria == "AUTOPISTA")
+
+
+buffer_autopistas <-
+  autopistas %>%
+  st_buffer (dist = 5000)
+
+
+denuncias_buffer_autopistas <-
+  st_join (denu_depu_crt, buffer_autopistas)
+
+plot (
+  st_union( buffer_autopistas),
+  main = "Denuncias ambientales alrededor de autopistas", 
+  axes = TRUE, 
+  graticule = TRUE
+)  
+
+plot (autopistas$geometry, col = "brown", add= TRUE)
+
+
+plot (denuncias_buffer_autopistas, pch =16, col = "red", add = TRUE)
+
+plot (provincias1, add= TRUE)
+
+```
+
+Row {data-width=300}
+-----------------------------------------------------------------------
+
+### Cantidad y tipo de denuncias ambientales cerca de autopistas y quebradas
+
+```{r}
+denuncias_buffer_autopistas %>%
+  st_drop_geometry () %>%
+  filter(!is.na(categoria) & categoria != "") %>%
+  group_by(TIPO_inf) %>%
+  summarise (registros = n ()) %>%
+  arrange (desc(registros)) %>%
+  slice (1:10)
+
+denuncias_buffer_quebradas %>%
+  st_drop_geometry () %>%
+  filter(!is.na(TIPO) & TIPO != "") %>%
+  group_by(TIPO_inf) %>%
+  summarise (registros = n ()) %>%
+  arrange (desc(registros)) %>%
+  slice (1:10)
+```
 
 
 
