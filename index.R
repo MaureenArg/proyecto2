@@ -283,3 +283,13 @@ denu_depu_crt_caribe%>%
   summarise (registros = n ()) %>%
   arrange (desc(registros)) %>%
   slice (1:10)
+
+
+
+
+plot(
+  provincias1$geometry,
+  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
+  main = "Quebradas",
+  axes = TRUE,
+  graticule = TRUE)

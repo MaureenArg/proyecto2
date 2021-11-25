@@ -173,10 +173,8 @@ Row {data-width=600}
 renderLeaflet({
   registros <-
     filtrarRegistros()
-  
   # Conversión del capa altitud a la clase RasterLayer
   altitud_rl <- raster::raster(altitud)
-  
   # Mapa Leaflet con capas de provincias y denuncias
   leaflet() %>%
     setView(lng = -84.19452,
@@ -186,15 +184,17 @@ renderLeaflet({
     addProviderTiles("Esri", group = "Esri") %>%
     addRasterImage(altitud_rl,group = "Altitud",
                    opacity = 0.6) %>%
+    # Overlay groups
     addPolygons(
       data = provincias,
+      group= "Provincias",
       color = "red",
-      fillColor = "transparent",
+      fillColor = "grey",
       stroke = TRUE, 
       weight = 1.0,
     ) %>%
     addCircleMarkers(
-      data = registros, group = "denuncias" , 
+      data = registros, group = "Denuncias Ambientales" , 
       stroke = TRUE,
       radius = 4,
       fillColor = 'red',
@@ -227,7 +227,7 @@ renderLeaflet({
     addSearchOSM() %>%
     addResetMapButton() %>%
     addMouseCoordinates () %>%
-    addLayersControl(baseGroups = c ("OSM", "Esri", "Altitud", "denuncias"))%>%
+    addLayersControl(baseGroups = c ("OSM", "Esri", "Altitud"), overlayGroups = c ("Provincias", "Denuncias Ambientales"), options = layersControlOptions(collapsed = TRUE))%>%
     addScaleBar("bottomright")  
 }) 
 ```
@@ -259,7 +259,7 @@ renderPlotly({
       color = I ("blue")
     ) %>%
     layout(title = "Cantidad de denuncias ambientales en 2018 y 2019", xaxis = list(title = "Tipo de denuncias"),
-           yaxis = list(title = "Cantidad de denuncias"))
+           yaxis = list(title = "Cantidad de denuncias ambientales"))
 })
 
 
@@ -272,7 +272,7 @@ Row {data-width=400}
   
   
 
-```{r tabla}
+```{r tablas}
 renderDT({
   registros <- filtrarRegistros()
   
@@ -284,7 +284,7 @@ renderDT({
 
 # Gráficos
 
-Row {data-width=300}
+Row {data-width=500}
 -----------------------------------------------------------------------
 
 ### Comparación del tipo de denuncias por año
@@ -300,10 +300,10 @@ data <- data.frame (Tipos, año2018, año2019)
 plot_ly (data, x= ~Tipos, y= ~año2018, type = "bar", name = "2018")%>%
 add_trace(y= ~año2019, name= "2019")%>%
 layout (yaxis= list(title="Cantidad"), barmode="group")%>%
-layout (title= "Cantidad de denuncias ambientales por año", xaxis= list (title= "Tipo de denuncia"), yaxis= list (title= "Cantidad de denuncias"))
+layout (title= "Cantidad de denuncias ambientales por año", xaxis= list (title= "Tipo de denuncia"), yaxis= list (title= "Cantidad de denuncias")) 
 ```
 
-Row {data-width=300}
+Row {data-width=500}
 -----------------------------------------------------------------------
 
 ### Total de denuncias ambientales según tipo (2018-2019)
@@ -332,37 +332,25 @@ ggplot () + geom_col (
 
 # Estadísticas 
 
-Row {data-width=300}
+Row {data-width=700}
 -----------------------------------------------------------------------
 
-### Denuncias registradas a una distancia de 1 km de quebradas
+### Denuncias registradas a una distancia de 7 km de cuerpos de agua de tipo: Quebradas
 
 ```{r}
 provincias1 <-
   provincias %>%
   st_transform(crs = 5367)
   
-
-plot(
-  provincias1$geometry,
-  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
-  main = "Quebradas",
-  axes = TRUE,
-  graticule = TRUE)
-
 quebradas <-
   rios %>%
   filter(TIPO == "QUEBRADA") %>%
   st_transform(crs = 5367)
 
-plot(
-  quebradas$geometry,
-  add = TRUE,
-  col = "blue")
 
 buffer_quebradas <-
   quebradas %>%
-  st_buffer (dist = 1000)
+  st_buffer (dist = 7000)
 
 denu_depu_crt <-
   denu_depu %>%
@@ -374,6 +362,7 @@ denuncias_buffer_quebradas <-
 
 plot (
   st_union( buffer_quebradas),
+  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
   main = "Denuncias ambientales alrededor de quebradas", 
   axes = TRUE, 
   graticule = TRUE
@@ -395,26 +384,57 @@ plot (provincias1$geometry, add= TRUE)
 
 ```
 
-```{r warning=FALSE, message=FALSE}
 
-## Cantidad de denuncias ambientales al rededor de quebradas 
+### Quebradas de la GAM
 
-denuncias_buffer_quebradas %>%
-  st_drop_geometry () %>%
-  filter(!is.na(TIPO) & TIPO != "") %>%
-  group_by(TIPO_inf) %>%
-  summarise (registros = n ()) %>%
-  arrange (desc(registros)) %>%
-  slice (1:10)
+```{r}
+GAM <-
+  provincias1 %>%
+  filter(provincia == "San José" | provincia == "Alajuela"| provincia == "Heredia"| provincia == "Cartago") 
+
+
+Denuncias_GAM<-
+  denuncias_buffer_quebradas %>%
+  filter (Provincia == "San José" | Provincia == "Alajuela"| Provincia == "Heredia"| Provincia == "Cartago")
+
+  
+plot (
+  st_union( Denuncias_GAM),
+  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
+  main = "Denuncias ambientales alrededor de quebradas de la GAM", 
+  axes = TRUE, 
+  graticule = TRUE
+)  
+
+plot(quebradas$geometry,
+     col = "blue",
+     add = TRUE)
+
+plot(
+  Denuncias_GAM$geometry,
+  pch = 16,
+  col = "red",
+  add = TRUE
+)
+
+
+
+plot (provincias1$geometry, add = TRUE
+  
+)
+
+
+  
+
 
 ```
 
 
 
-Row {data-width=300}
------------------------------------------------------------------------
 
-### Denuncias ambientales registradas a una distancia de 5 km de autopistas principales
+
+
+### Denuncias ambientales registradas a una distancia de 5 km de autopistas/rutas importantes (1, 2, 27, 32)
 
 
 ```{r}
@@ -433,20 +453,49 @@ denuncias_buffer_autopistas <-
 
 plot (
   st_union( buffer_autopistas),
-  main = "Denuncias ambientales alrededor de autopistas", 
+  main = "Denuncias ambientales alrededor de rutas importantes", 
   axes = TRUE, 
   graticule = TRUE
 )  
 
 plot (autopistas$geometry, col = "brown", add= TRUE)
 
-
 plot (denuncias_buffer_autopistas, pch =16, col = "red", add = TRUE)
+
+plot (provincias1$geometry, add= TRUE)
 
 ```
 
 
-```{r warning=FALSE, message=FALSE}
+
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+### Cantidad de denuncias ambientales alrededor de cuerpos de agua de tipo: Quebradas
+
+```{r tabla}
+
+
+  
+  denuncias_buffer_quebradas %>%
+    st_drop_geometry () %>%
+    filter(!is.na(TIPO) & TIPO != "") %>%
+    group_by(TIPO_inf) %>%
+    summarise (registros = n ()) %>%
+     arrange (desc(registros)) %>%
+    slice (1:10)%>%
+    datatable(rownames= FALSE, colnames = c( "Tipo de denuncia", "Cantidad de denuncias"),options = list (language = list (url = "//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json"), dom = "Bfrtip"))  
+
+
+
+
+```
+
+
+
+### Cantidad de denuncias ambientales alrededor de rutas importantes de Costa Rica
+
+```{r }
 ## Cantidad de denuncias ambientales alrededor de autopistas
 
 denuncias_buffer_autopistas %>%
@@ -455,22 +504,332 @@ denuncias_buffer_autopistas %>%
   group_by(TIPO_inf) %>%
   summarise (registros = n ()) %>%
   arrange (desc(registros)) %>%
-  slice (1:10)
+  slice (1:10)%>%
+ datatable(rownames= FALSE, colnames = c( "Tipo de denuncia", "Cantidad de denuncias"),options = list (language = list (url = "//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json"), dom = "Bfrtip"))  
 ```
 
 
 
 
-Row {data-width=300}
+
+# Estadísticas por región 
+
+Column {data-width=300}
 -----------------------------------------------------------------------
 
-### Cantidad y tipo de denuncias ambientales cerca de autopistas y quebradas
+### Denuncias ambientales ocurridas en el Pacífico en 2018-2019
+
+```{r}
+# denuncias en el pacifico 
+
+provincias_pacifico <-
+  provincias1 %>%
+  filter(provincia == "Guanacaste" | provincia == "Puntarenas")
+
+denu_depu_crt_pacif <-
+  denu_depu_crt %>%
+  filter(Provincia == "Guanacaste" | Provincia == "Puntarenas")
+
+
+plot(
+  provincias_pacifico$geometry,
+  main = "Denuncias ambientales ocurridas en el Pacífico",
+  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
+  axes = TRUE,
+  graticule = TRUE)
+
+plot (
+  denu_depu_crt_pacif$geometry, 
+  col = "red",
+  add= TRUE
+  
+)
+
+```
+
+
+
+Row {data-width=200}
+-----------------------------------------------------------------------
+### 10 tipos de denuncias ambientales ocurridas con más frecuencia en el Pacífico
+
+```{r}
+# 10 tipos de denuncias ambientales más ocurridas en el Pacífico 
+
+ h3 ("Los 10 tipos de denuncias ambientales ocurridas con más frecuencia en el Pacífico")
+
+denu_depu_crt_pacif%>%
+  st_drop_geometry()%>%
+  group_by(TIPO_inf)%>%
+  summarise (registros = n ()) %>%
+  arrange (desc(registros)) %>%
+  slice (1:10) %>%
+datatable(rownames= FALSE, colnames = c( "Tipo de denuncia", "Cantidad de denuncias"), options = list (language = list (url = "//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json"), dom = "Bfrtip"))  
+```
+
+
+
+
+
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+###  Denuncias ambientales ocurridas en el Caribe en 2018-2019
+
+```{r}
+# denuncias en el caribe
+
+provincias_caribe <-
+  provincias1 %>%
+  filter(provincia == "Limón")
+
+denu_depu_crt_caribe <-
+  denu_depu_crt %>%
+  filter(Provincia == "Limón")
+
+
+plot(
+  provincias_caribe$geometry,
+  main = "Denuncias ambientales ocurridas en el Caribe",
+  extent = st_bbox(c(xmin = 500000, xmax = 660000, ymin = 990000, ymax= 1250000)),  
+  axes = TRUE,
+  graticule = TRUE)
+
+plot (
+  denu_depu_crt_caribe$geometry, 
+  col = "red",
+  add= TRUE
+  
+)
+
+```
+
+ Row {data-width=200}
+-----------------------------------------------------------------------
+
+### 10 tipos de denuncias ambientales ocurridas con más frecuencia el Caribe 
+
+```{r}
+# 10 tipos de denuncias ambientales más ocurridas en el Caribe  
+ h3 ("Las 10 tipos de denuncias ambientales ocurridas con más frecuencia en el Caribe")
+
+denu_depu_crt_caribe%>%
+  st_drop_geometry()%>%
+  group_by(TIPO_inf)%>%
+  summarise (registros = n ()) %>%
+  arrange (desc(registros)) %>%
+  slice (1:10)%>%
+  datatable(rownames= FALSE, colnames = c( "Tipo de denuncia", "Cantidad de denuncias"), options = list (language = list (url = "//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json"), dom = "Bfrtip"))
+
+```
+
+
+# Denuncias y Áreas Silvestres Protegidas
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Denuncias ambientales y Áreas Silvestres Protegidas
+
+```{r}
+# humedal y denuncias 
+
+humedal <-
+  asp %>%
+  filter(cat_manejo == "Humedal")
+
+# Mapa
+plot(
+  provincias1$geometry,
+  main = "Denuncias ambientales y ASP con humedal",
+  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
+  axes = TRUE,
+  col = "transparent",
+  graticule = TRUE)
+
+plot(
+  humedal$geometry,
+  border = "green",
+  add = TRUE)
+
+ plot(
+  asp$geometry,
+  border = "brown",
+  add = TRUE) 
+
+plot (
+  denu_depu_crt$geometry, 
+  col = "red",
+  add= TRUE)
+
+```
+
+### Denuncias Ambientales cercanas a ASP con categoría de manejo tipo Humedal
 
 ```{r}
 
+provincias1 <-
+  provincias %>%
+  st_transform(crs = 5367)
+
+prov_humedal <-
+  provincias1 %>%
+  filter(provincia == "Puntarenas"| provincia == "Limón"| provincia == "Guanacaste")
+
+denu_depu_crt_humedal <-
+  denu_depu_crt %>%
+  filter(Provincia == "Limón" | Provincia== "Puntarenas"| Provincia == "Guanacaste")
+
+
+
+#Mapa
+
+plot (
+  prov_humedal$geometry, 
+  main= "Denuncias Ambientales cercanas a ASP con humedal", 
+  col= "grey",
+  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),
+  axes= TRUE, 
+  graticulate = TRUE
+)
+
+plot (
+  denu_depu_crt_humedal$geometry, 
+  col = "red",
+  add= TRUE
+  
+)  
+
+plot (provincias1$geometry, add= TRUE, axes = TRUE)
+
+plot (humedal, add= TRUE, col = "green")
+
+```
+
+
+
+# Denuncias Ambientales dentro y fuera de la GAM
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+### Denuncias ambientales fuera de la Gran Área Metropolitana (GAM)
+
+```{r}
+
+provincias1 <-
+  provincias %>%
+  st_transform(crs = 5367)
+
+F_GAM <-
+  provincias1 %>%
+  filter(provincia == "Puntarenas"| provincia == "Limón"| provincia == "Guanacaste")
+
+denu_depu_FGAM <-
+  denu_depu_crt %>%
+  filter(Provincia == "Limón" | Provincia== "Puntarenas"| Provincia == "Guanacaste")
+
+
+#Mapa
+
+plot (
+  F_GAM$geometry, 
+  main= "Denuncias Ambientales fuera de la GAM", 
+  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),
+  col= "green",
+  axes= TRUE, 
+  graticule = TRUE
+)
+
+plot (
+  denu_depu_FGAM$geometry, 
+  pch = 16,
+  col = "red",
+  add= TRUE
+  
+)  
+
+plot (provincias1$geometry, add= TRUE, axes = TRUE)
+```
+
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+### Cantidad de denuncias ambientales fuera de la GAM 
+```{r}
+## Cantidad de denuncias ambientales fuera de la GAM
+
+denu_depu_FGAM %>%
+  st_drop_geometry () %>%
+  
+  group_by(TIPO_inf) %>%
+  summarise (registros = n ()) %>%
+  arrange (desc(registros)) %>%
+  slice (1:10)%>%
+ datatable(rownames= FALSE, colnames = c( "Tipo de denuncia", "Cantidad de denuncias"),options = list (language = list (url = "//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json"), dom = "Bfrtip"))  
+```
+
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+### Denuncias ambientales en la Gran Área Metropolitana (GAM)
+
+```{r}
+
+provincias1 <-
+  provincias %>%
+  st_transform(crs = 5367)
+
+GAM <-
+  provincias1 %>%
+  filter(provincia == "San José" | provincia == "Alajuela"| provincia == "Heredia"| provincia == "Cartago") 
+  
+plot (
+  GAM$geometry,
+  main = "Denuncias ambientales dentro la GAM", 
+  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
+  col= "grey", 
+  axes = TRUE, 
+  graticule = TRUE
+)  
+
+
+
+plot(
+  Denuncias_GAM$geometry,
+  pch = 16,
+  col = "red",
+  add = TRUE
+)
+
+
+
+plot (provincias1$geometry, add = TRUE
+  
+)
 
 
 ```
 
+
+
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+### Cantidad de denuncias ambientales dentro de la GAM
+
+```{r}
+## Cantidad de denuncias ambientales dentro de la GAM
+
+Denuncias_GAM %>%
+  st_drop_geometry () %>%
+  filter(!is.na(NOMBRE) & NOMBRE != "") %>%
+  group_by(TIPO_inf) %>%
+  summarise (registros = n ()) %>%
+  arrange (desc(registros)) %>%
+  slice (1:10)%>%
+ datatable(rownames= FALSE, colnames = c( "Tipo de denuncia", "Cantidad de denuncias"),options = list (language = list (url = "//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json"), dom = "Bfrtip"))  
+```
 
 
