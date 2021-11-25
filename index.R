@@ -293,3 +293,54 @@ plot(
   main = "Quebradas",
   axes = TRUE,
   graticule = TRUE)
+
+
+
+
+Row {data-width=300}
+-----------------------------------------------------------------------
+  
+  ### Cantidad y tipo de denuncias ambientales cerca de autopistas y quebradas
+  
+  ```{r}
+
+
+
+```
+# 10 tipos de denuncias más ocurridas en el humedales
+
+h3 ("Las 10 tipos de denuncias ambientales ocurridas con más frecuencia en humedales")
+
+provincias_caribe <-
+  provincias1 %>%
+  filter(provincia == "Limón")
+
+denu_depu_crt_humedal <-
+  denu_depu_crt %>%
+  filter(Provincia == "Limón",Provincia == "Puntarenas", Provincia == "Guanacaste" )
+
+
+
+
+humedal_denu%>%
+  st_drop_geometry()%>%
+  group_by(TIPO_inf)%>%
+  summarise (registros = n ()) %>%
+  arrange (desc(registros)) %>%
+  slice (1:10)
+
+
+
+renderDT({
+  denuncias_buffer_quebradas<-filtrarRegistros()
+  
+  denuncias_buffer_quebradas %>%
+    st_drop_geometry () %>%
+    filter(!is.na(TIPO) & TIPO != "") %>%
+    group_by(TIPO_inf) %>%
+    summarise (registros = n ()) %>%
+    arrange (desc(registros)) %>%
+    slice (1:10)%>%
+    datatable(rownames= FALSE, colnames = c( "Tipo de denuncia", "Cantidad de denuncias", dom = "Bfrtip"))  
+  
+})
