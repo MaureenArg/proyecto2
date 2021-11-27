@@ -332,112 +332,70 @@ ggplot () + geom_col (
 
 # Estadísticas 
 
-Row {data-width=700}
+Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Denuncias registradas a una distancia de 7 km de cuerpos de agua de tipo: Quebradas
+### Denuncias registradas a una distancia de 7 km de río Reventazón y Grande de Térraba
 
 ```{r}
 provincias1 <-
   provincias %>%
   st_transform(crs = 5367)
   
-quebradas <-
+rios_imp <-
   rios %>%
-  filter(TIPO == "QUEBRADA") %>%
+  filter(NOMBRE == "RIO GRANDE DE TERRABA"| NOMBRE == "RIO REVENTAZON"|NOMBRE == "RIO PACUARE") %>%
   st_transform(crs = 5367)
 
 
-buffer_quebradas <-
-  quebradas %>%
-  st_buffer (dist = 7000)
+buffer_rios <-
+  rios_imp %>%
+  st_buffer(dist = 7000)
 
 denu_depu_crt <-
   denu_depu %>%
   st_transform(crs = 5367)
 
 
-denuncias_buffer_quebradas <-
-  st_join (denu_depu_crt, buffer_quebradas)
+denuncias_buffer_rios <-
+  st_join (denu_depu_crt, buffer_rios) %>%
+  filter(!is.na(CODIGO))
+  
 
 plot (
-  st_union( buffer_quebradas),
+  st_union(buffer_rios),
   extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
-  main = "Denuncias ambientales alrededor de quebradas", 
+  main = "Denuncias alrededor de ríos Reventazón y Térraba", 
   axes = TRUE, 
+  col = "grey", 
   graticule = TRUE
 )  
 
-plot(quebradas$geometry,
+plot(rios_imp$geometry,
      col = "blue",
      add = TRUE)
 
-plot(
-  denuncias_buffer_quebradas,
+plot (
+  denuncias_buffer_rios$geometry,
   pch = 16,
   col = "red",
   add = TRUE
 )
 
-plot (provincias1$geometry, add= TRUE)
-
-
-```
-
-
-### Quebradas de la GAM
-
-```{r}
-GAM <-
-  provincias1 %>%
-  filter(provincia == "San José" | provincia == "Alajuela"| provincia == "Heredia"| provincia == "Cartago") 
-
-
-Denuncias_GAM<-
-  denuncias_buffer_quebradas %>%
-  filter (Provincia == "San José" | Provincia == "Alajuela"| Provincia == "Heredia"| Provincia == "Cartago")
-
-  
-plot (
-  st_union( Denuncias_GAM),
-  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
-  main = "Denuncias ambientales alrededor de quebradas de la GAM", 
-  axes = TRUE, 
-  graticule = TRUE
-)  
-
-plot(quebradas$geometry,
-     col = "blue",
-     add = TRUE)
-
-plot(
-  Denuncias_GAM$geometry,
-  pch = 16,
-  col = "red",
-  add = TRUE
-)
-
-
-
-plot (provincias1$geometry, add = TRUE
-  
-)
-
-
-  
+plot (provincias1$geometry, add = TRUE)
 
 
 ```
 
 
 
+-----------------------------------------------------------------------
+###  Denuncias ambientales registradas a una distancia de 5 km de autopistas/rutas importantes (1, 2, 27, 32, 39,252)
 
-
-
-### Denuncias ambientales registradas a una distancia de 5 km de autopistas/rutas importantes (1, 2, 27, 32)
 
 
 ```{r}
+
 autopistas <-
   red_vial %>%
   filter(categoria == "AUTOPISTA")
@@ -449,35 +407,98 @@ buffer_autopistas <-
 
 
 denuncias_buffer_autopistas <-
-  st_join (denu_depu_crt, buffer_autopistas)
+  st_join (denu_depu_crt, buffer_autopistas)%>%
+  filter(!is.na(codigo))
 
 plot (
   st_union( buffer_autopistas),
+  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)), 
   main = "Denuncias ambientales alrededor de rutas importantes", 
-  axes = TRUE, 
+  axes = TRUE, col = "grey",
   graticule = TRUE
 )  
 
-plot (autopistas$geometry, col = "brown", add= TRUE)
+plot (autopistas$geometry, col = "dark orange", add= TRUE)
 
-plot (denuncias_buffer_autopistas, pch =16, col = "red", add = TRUE)
+plot (denuncias_buffer_autopistas, pch = 10, col = "red", add = TRUE)
 
 plot (provincias1$geometry, add= TRUE)
+
+
 
 ```
 
 
 
-
-Column {data-width=200}
+Column {data-width=350}
 -----------------------------------------------------------------------
-### Cantidad de denuncias ambientales alrededor de cuerpos de agua de tipo: Quebradas
+
+### Denuncias registradas a una distancia de 7 km de río Reventazón y Grande de Térraba
+
+
+```{r}
+
+
+
+
+plot (
+  st_union(buffer_rios),
+  
+  main = "Denuncias alrededor de ríos Reventazón y Térraba", 
+  axes = TRUE, 
+  col = "grey", 
+  graticule = TRUE
+)  
+
+plot(rios_imp$geometry,
+     col = "blue",
+     add = TRUE)
+
+plot (
+  denuncias_buffer_rios$geometry,
+  pch = 16,
+  col = "red",
+  add = TRUE
+)
+
+plot (provincias1$geometry, add = TRUE)
+
+```
+
+
+
+-----------------------------------------------------------------------
+###  Denuncias ambientales registradas a una distancia de 5 km de autopistas/rutas importantes (1, 2, 27, 32, 39,252)
+
+
+
+```{r}
+plot (
+  st_union( buffer_autopistas),
+ 
+  main = "Denuncias ambientales alrededor de rutas importantes", 
+  axes = TRUE, col = "grey",
+  graticule = TRUE
+)  
+
+plot (autopistas$geometry, col = "dark orange", add= TRUE)
+
+plot (denuncias_buffer_autopistas, pch = 10, col = "red", add = TRUE)
+
+plot (provincias1$geometry, add= TRUE)
+```
+
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+### Cantidad de denuncias ambientales alrededor de ríos Reventazón y Grande de Térraba
 
 ```{r tabla}
 
 
   
-  denuncias_buffer_quebradas %>%
+  denuncias_buffer_rios %>%
     st_drop_geometry () %>%
     filter(!is.na(TIPO) & TIPO != "") %>%
     group_by(TIPO_inf) %>%
@@ -614,6 +635,7 @@ plot (
 
 ```{r}
 # 10 tipos de denuncias ambientales más ocurridas en el Caribe  
+
  h3 ("Las 10 tipos de denuncias ambientales ocurridas con más frecuencia en el Caribe")
 
 denu_depu_crt_caribe%>%
@@ -627,95 +649,12 @@ denu_depu_crt_caribe%>%
 ```
 
 
-# Denuncias y Áreas Silvestres Protegidas
+
+# Denuncias Ambientales según tipo de provincias (costeras/no costeras)
 
 Column {data-width=300}
 -----------------------------------------------------------------------
-
-### Denuncias ambientales y Áreas Silvestres Protegidas
-
-```{r}
-# humedal y denuncias 
-
-humedal <-
-  asp %>%
-  filter(cat_manejo == "Humedal")
-
-# Mapa
-plot(
-  provincias1$geometry,
-  main = "Denuncias ambientales y ASP con humedal",
-  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
-  axes = TRUE,
-  col = "transparent",
-  graticule = TRUE)
-
-plot(
-  humedal$geometry,
-  border = "green",
-  add = TRUE)
-
- plot(
-  asp$geometry,
-  border = "brown",
-  add = TRUE) 
-
-plot (
-  denu_depu_crt$geometry, 
-  col = "red",
-  add= TRUE)
-
-```
-
-### Denuncias Ambientales cercanas a ASP con categoría de manejo tipo Humedal
-
-```{r}
-
-provincias1 <-
-  provincias %>%
-  st_transform(crs = 5367)
-
-prov_humedal <-
-  provincias1 %>%
-  filter(provincia == "Puntarenas"| provincia == "Limón"| provincia == "Guanacaste")
-
-denu_depu_crt_humedal <-
-  denu_depu_crt %>%
-  filter(Provincia == "Limón" | Provincia== "Puntarenas"| Provincia == "Guanacaste")
-
-
-
-#Mapa
-
-plot (
-  prov_humedal$geometry, 
-  main= "Denuncias Ambientales cercanas a ASP con humedal", 
-  col= "grey",
-  extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),
-  axes= TRUE, 
-  graticulate = TRUE
-)
-
-plot (
-  denu_depu_crt_humedal$geometry, 
-  col = "red",
-  add= TRUE
-  
-)  
-
-plot (provincias1$geometry, add= TRUE, axes = TRUE)
-
-plot (humedal, add= TRUE, col = "green")
-
-```
-
-
-
-# Denuncias Ambientales dentro y fuera de la GAM
-
-Column {data-width=300}
------------------------------------------------------------------------
-### Denuncias ambientales fuera de la Gran Área Metropolitana (GAM)
+### Denuncias ambientales en provincias costeras
 
 ```{r}
 
@@ -736,7 +675,7 @@ denu_depu_FGAM <-
 
 plot (
   F_GAM$geometry, 
-  main= "Denuncias Ambientales fuera de la GAM", 
+  main= "Denuncias ambientales en provincias costeras", 
   extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),
   col= "green",
   axes= TRUE, 
@@ -757,9 +696,9 @@ plot (provincias1$geometry, add= TRUE, axes = TRUE)
 
 Column {data-width=200}
 -----------------------------------------------------------------------
-### Cantidad de denuncias ambientales fuera de la GAM 
+### Cantidad de denuncias ambientales en provincias costeras (las 10 más frecuentes)
 ```{r}
-## Cantidad de denuncias ambientales fuera de la GAM
+## Cantidad de denuncias ambientales en provincias costeras
 
 denu_depu_FGAM %>%
   st_drop_geometry () %>%
@@ -775,7 +714,7 @@ denu_depu_FGAM %>%
 
 Column {data-width=300}
 -----------------------------------------------------------------------
-### Denuncias ambientales en la Gran Área Metropolitana (GAM)
+### Denuncias ambientales en provincias "no costeras"
 
 ```{r}
 
@@ -786,10 +725,18 @@ provincias1 <-
 GAM <-
   provincias1 %>%
   filter(provincia == "San José" | provincia == "Alajuela"| provincia == "Heredia"| provincia == "Cartago") 
+
+
+denu_depu_GAM <-
+  denu_depu_crt %>%
+  filter(Provincia == "San José" | Provincia== "Alajuela"| Provincia == "Heredia"| Provincia == "Cartago")
+
+
+
   
 plot (
   GAM$geometry,
-  main = "Denuncias ambientales dentro la GAM", 
+  main = "Denuncias ambientales en provincias no costeras", 
   extent = st_bbox(c(xmin = 280000, xmax = 660000, ymin = 880000, ymax= 1250000)),  
   col= "grey", 
   axes = TRUE, 
@@ -799,7 +746,7 @@ plot (
 
 
 plot(
-  Denuncias_GAM$geometry,
+  denu_depu_GAM$geometry,
   pch = 16,
   col = "red",
   add = TRUE
@@ -819,14 +766,14 @@ plot (provincias1$geometry, add = TRUE
 
 Column {data-width=200}
 -----------------------------------------------------------------------
-### Cantidad de denuncias ambientales dentro de la GAM
+### Cantidad de denuncias ambientales en provincias "no costeras" (las 10 más frecuentes)
 
 ```{r}
-## Cantidad de denuncias ambientales dentro de la GAM
+## Cantidad de denuncias ambientalesen provincias "no costeras"
 
-Denuncias_GAM %>%
+denu_depu_GAM %>%
   st_drop_geometry () %>%
-  filter(!is.na(NOMBRE) & NOMBRE != "") %>%
+  
   group_by(TIPO_inf) %>%
   summarise (registros = n ()) %>%
   arrange (desc(registros)) %>%
